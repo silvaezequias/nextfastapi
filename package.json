@@ -1,0 +1,43 @@
+{
+  "name": "nextapi",
+  "version": "1.0.0",
+  "description": "Next.js API controller with middleware and error handling support.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./errors": {
+      "import": "./dist/errors/index.js",
+      "types": "./dist/errors/index.d.ts"
+    },
+    "./http": {
+      "import": "./dist/http/index.js",
+      "types": "./dist/http/index.d.ts"
+    },
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "type": "module",
+  "author": "Ezequias Lopes",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/silvaezequias/nextapi.git"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w"
+  },
+  "keywords": [
+    "nextjs",
+    "api",
+    "controller",
+    "middleware",
+    "typescript"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
