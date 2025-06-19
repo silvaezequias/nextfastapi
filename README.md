@@ -1,4 +1,4 @@
-# 📦 NextAPI - The lightweight, expressive way to build API routes in Next.js
+# 📦 NextFastAPI - The lightweight, expressive way to build API routes in Next.js
 
 A minimalist routing controller for building structured APIs in **Next.js App Router**, with Express-style middleware, error handling, and multi-method support.
 
@@ -7,9 +7,9 @@ A minimalist routing controller for building structured APIs in **Next.js App Ro
 ## 🚀 Installation
 
 ```bash
-npm install nextapi
+npm install nextfastapi
 # or
-yarn add nextapi
+yarn add nextfastapi
 ```
 
 ---
@@ -30,8 +30,8 @@ yarn add nextapi
 // app/api/hello/route.ts
 
 import { NextRequest } from "next/server";
-import RouteController from "nextapi";
-import { UnauthorizedError } from "nextapi/errors";
+import RouteController from "nextfastapi";
+import { UnauthorizedError } from "nextfastapi/errors";
 
 const controller = new RouteController();
 
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
 
 ```ts
 // middleware/logger.ts
-import type { Middleware } from "nextapi";
+import type { Middleware } from "nextfastapi";
 
 export const logger: Middleware = async (req, next) => {
   const start = performance.now();
@@ -117,8 +117,8 @@ controller.get(async (req) => {
 You can catch and format any error using `onError`:
 
 ```ts
-import { RouteController } from "nextapi";
-import { BadRequestError } from "nextapi/errors";
+import { RouteController } from "nextfastapi";
+import { BadRequestError } from "nextfastapi/errors";
 
 const controller = new RouteController();
 
@@ -137,7 +137,7 @@ controller.onError((err) => {
 > 💡 All thrown errors are normalized and typed — even native `Error` objects.
 
 Built-in HTTP error classes:
-_`"nextapi/http"`_
+_`"nextfastapi/http"`_
 
 - `BadRequestError` – 400
 - `UnauthorizedError` – 401
