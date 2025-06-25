@@ -1,6 +1,6 @@
-# 📦 NextFastAPI - The lightweight, expressive way to build API routes in Next.js
+# 📦 NextFastAPI — Lightweight API Controller for Next.js (App Router)
 
-A minimalist routing controller for building structured APIs in **Next.js App Router**, with Express-style middleware, error handling, and multi-method support.
+NextFastAPI provides an easy way to create structured API routes in **Next.js App Router**, with Express-like middleware support, multi-method handlers, built-in error handling, and strong typing.
 
 ---
 
@@ -14,149 +14,169 @@ yarn add nextfastapi
 
 ---
 
-## ✨ Features
+## 📄 Quick Start
 
-- Support for `GET`, `POST`, `PUT`, `DELETE`, `PATCH`, `OPTIONS`, `HEAD`
-- Chainable middlewares using `next()` (like Express)
-- Global error handler (`onError`)
-- Fallback handler for unmatched methods (`onNoMatch`)
-- Works seamlessly with `NextRequest` from Next.js App Router
-
----
-
-## 🧠 Basic Usage
+### 1. Create a simple GET router
 
 ```ts
 // app/api/hello/route.ts
 
-import { NextRequest } from "next/server";
-import RouteController from "nextfastapi";
-import { UnauthorizedError } from "nextfastapi/errors";
+import { RouteController, expose } from "nextfastapi";
 
 const controller = new RouteController();
 
-// 🔐 Auth middleware
-controller.use(async (req, next) => {
-  const token = req.headers.get("authorization");
-  if (token !== "Bearer token-123") {
-    throw new UnauthorizedError({ message: "Invalid token" });
-  }
-
-  (req as any).platformId = "demo"; // example of multi-tenant usage
-  return next();
-});
-
-// ✅ GET handler
 controller.get(async (req) => {
-  const platformId = (req as any).platformId;
-  return Response.json({ message: `Hello from ${platformId}` });
+  return Response.json({ message: "Hello from NextFastAPI!" });
 });
 
-// ❌ Fallback for unmatched methods
-controller.onNoMatch(() =>
-  Response.json({ error: "Method not allowed" }, { status: 405 })
-);
-
-// 🔥 Global error handler
-controller.onError((err, _req) => {
-  return Response.json(
-    { error: err.message, action: err.action },
-    { status: err.statusCode }
-  );
-});
-
-export async function GET(req: NextRequest) {
-  return controller.handle(req as any);
-}
+export const GET = expose(controller);
 ```
 
 ---
 
-## 🔌 Example Middleware
+## ⚙️ Middlewares
+
+Middlewares let you run logic before your handlers. You can apply middlewares **globally** (all methods) or **per method**.
+
+---
+
+### 2. Global Middleware (for all methods)
 
 ```ts
-// middleware/logger.ts
-import type { Middleware } from "nextfastapi";
+import type { Middleware } from "nextfastapi/types";
 
-export const logger: Middleware = async (req, next) => {
-  const start = performance.now();
-  const res = await next();
-  const end = (performance.now() - start).toFixed(2);
-
-  console.info(`${req.method} ${req.url} -> ${res?.status} (${end} ms)`);
-  return res;
+type Context = {
+  requestTime?: string;
 };
+
+const controller = new RouteController<Context>();
+
+const addRequestTime: Middleware<Context> = (req, params, next) => {
+  req.context.requestTime = new Date().toISOString();
+  return next();
+};
+
+controller.use(addRequestTime);
+
+controller.get((req) => {
+  const requestTime = req.context.requestTime;
+
+  return Response.json({ message: `GET Method: ${requestTime}` });
+});
+
+controller.post((req) => {
+  const requestTime = req.context.requestTime;
+
+  return Response.json({ message: `GET Method: ${requestTime}` });
+});
+
+export const GET = expose(controller);
+export const POST = expose(controller);
 ```
 
 ---
 
-### 🧠 Request Context (`req.context`)
-
-This object is designed to help you **safely share data** between middlewares and handlers during the same request lifecycle.
-
-#### ✅ Example
+### 3. Middleware for a Single Method
 
 ```ts
-controller.use(async (req, next) => {
-  req.context.user = { id: "abc123", role: "admin" };
+import type { Middleware } from "nextfastapi/types";
+
+// Session Control Middleware
+import { insertUserRole } from "./middlewares";
+
+type Context = {
+  userRole?: "admin" | "user";
+};
+
+const controller = new RouteController<Context>();
+
+const checkAdmin: Middleware<Context> = (req, params, next) => {
+  if (req.context.userRole !== "admin") {
+    throw new ForbiddenError({ message: "You are not ADMIN!" });
+  }
   return next();
+};
+
+// Inserting Admin Verification Middleware
+controller.get(insertUserRole, checkAdmin, (req) => {
+  return Response.json({ secret: "This is admin only" });
 });
 
-controller.get(async (req) => {
-  const user = req.context?.user;
-  return Response.json({ message: `Hello, ${user?.id}` });
+controller.post((req) => {
+  return Response.json({ secret: "This secret is PUBLIC" });
 });
+
+export const GET = expose(controller);
+export const POST = expose(controller);
 ```
-
-> ℹ️ `context` is fully customizable. You can use it to store auth data, parsed body, validated input, etc.
 
 ---
 
 ## ⚠️ Error Handling
 
-You can catch and format any error using `onError`:
+NextFastAPI comes with a built-in error manager that formats errors automatically.
+
+### 4. Using Built-in HTTP Errors
 
 ```ts
-import { RouteController } from "nextfastapi";
-import { BadRequestError } from "nextfastapi/errors";
-
-const controller = new RouteController();
-
-controller.get(() => {
-  throw new BadRequestError({ message: "Invalid input" });
+controller.get((req) => {
+  throw new BadRequestError({ message: "Custom Bad Request Error Message" });
 });
 
-controller.onError((err) => {
-  return Response.json(
-    { error: err.message, hint: err.action },
-    { status: err.statusCode }
-  );
+export const GET = expose(controller);
+export const POST = expose(controller);
+```
+
+---
+
+### 5. Custom Error Handler (optional)
+
+```ts
+import { transformError } from "nextfastapi/errors";
+
+controller.onError((err, req) => {
+  // parse js built in error for a base object
+  const safeError = transformError(err);
+
+  const response = {
+    error: safeError.message,
+    action: safeError.action, // default action message added by error classes
+  };
+
+  return Response.json(response, {
+    status: safeError.statusCode,
+  });
 });
 ```
 
-> 💡 All thrown errors are normalized and typed — even native `Error` objects.
+---
 
-Built-in HTTP error classes:
-_`"nextfastapi/http"`_
+## 📚 Available HTTP Error Classes
 
-- `BadRequestError` – 400
-- `UnauthorizedError` – 401
-- `ForbiddenError` – 403
-- `NotFoundError` – 404
-- `MethodNotAllowedError` – 405
-- `ConflictError` – 409
-- `UnprocessableEntityError` – 422
-- `TooManyRequestsError` – 429
-- `InternalError` – 500
+| Error Class                | HTTP Status Code | Default Action Message                              |
+| -------------------------- | ---------------- | --------------------------------------------------- |
+| `BadRequestError`          | 400              | "Check the request data and try again."             |
+| `UnauthorizedError`        | 401              | "Provide valid authentication credentials."         |
+| `ForbiddenError`           | 403              | "Ensure you have permission to access this."        |
+| `NotFoundError`            | 404              | "Verify the resource identifier and try again."     |
+| `MethodNotAllowedError`    | 405              | "Use a supported HTTP method for this endpoint."    |
+| `ConflictError`            | 409              | "Resolve conflicting data before retrying."         |
+| `UnprocessableEntityError` | 422              | "Check the entity's data validity and constraints." |
+| `TooManyRequestsError`     | 429              | "Reduce request frequency or wait before retrying." |
+| `InternalError`            | 500              | "Try again later or contact support."               |
 
-Example:
+---
 
-```ts
-throw new NotFoundError({ message: "Not found error message" });
-```
+## 💡 Summary
+
+- Create routes with `.get()`, `.post()`, etc., and export with `expose`.
+- Add middlewares globally with `.use()` or per method by passing them as arguments.
+- Use built-in HTTP error classes for standardized errors.
+- Customize error responses with `.onError()` if you want.
+- `req.context` allows sharing data between middlewares and handlers.
 
 ---
 
 ## 📄 License
 
-MIT © 2025 – Developed by Ezequias Lopes
+MIT © 2025 – Developed by **Ezequias Lopes**

@@ -1,10 +1,13 @@
 {
   "name": "nextfastapi",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "Next.js API controller with middleware and error handling support.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
+    "./types": {
+      "types": "./dist/types/Controller.d.ts"
+    },
     "./errors": {
       "import": "./dist/errors/index.js",
       "types": "./dist/errors/index.d.ts"
@@ -36,8 +39,11 @@
     "middleware",
     "typescript"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "snakecase-keys": "^8.0.1"
+  },
   "devDependencies": {
+    "@types/next": "^9.0.0",
     "typescript": "^5.4.0"
   }
 }
