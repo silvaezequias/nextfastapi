@@ -1,6 +1,6 @@
 {
   "name": "nextfastapi",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Next.js API controller with middleware and error handling support.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
