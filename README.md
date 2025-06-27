@@ -21,7 +21,7 @@ yarn add nextfastapi
 ```ts
 // app/api/hello/route.ts
 
-import { RouteController, expose } from "nextfastapi";
+import { RouteController } from "nextfastapi";
 
 const controller = new RouteController();
 
@@ -29,7 +29,7 @@ controller.get(async (req) => {
   return Response.json({ message: "Hello from NextFastAPI!" });
 });
 
-export const GET = expose(controller);
+export const GET = controller.expose();
 ```
 
 ---
@@ -70,8 +70,8 @@ controller.post((req) => {
   return Response.json({ message: `GET Method: ${requestTime}` });
 });
 
-export const GET = expose(controller);
-export const POST = expose(controller);
+export const GET = controller.expose();
+export const POST = controller.expose();
 ```
 
 ---
@@ -106,8 +106,8 @@ controller.post((req) => {
   return Response.json({ secret: "This secret is PUBLIC" });
 });
 
-export const GET = expose(controller);
-export const POST = expose(controller);
+export const GET = controller.expose();
+export const POST = controller.expose();
 ```
 
 ---
@@ -123,8 +123,8 @@ controller.get((req) => {
   throw new BadRequestError({ message: "Custom Bad Request Error Message" });
 });
 
-export const GET = expose(controller);
-export const POST = expose(controller);
+export const GET = controller.expose();
+export const POST = controller.expose();
 ```
 
 ---
@@ -169,7 +169,7 @@ controller.onError((err, req) => {
 
 ## 💡 Summary
 
-- Create routes with `.get()`, `.post()`, etc., and export with `expose`.
+- Create routes with `.get()`, `.post()`, etc., and export with `<controller>.expose()`.
 - Add middlewares globally with `.use()` or per method by passing them as arguments.
 - Use built-in HTTP error classes for standardized errors.
 - Customize error responses with `.onError()` if you want.
