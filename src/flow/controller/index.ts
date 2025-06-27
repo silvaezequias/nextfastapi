@@ -24,37 +24,66 @@ export class RouteController<
   private errorHandler?: ErrorHandler<Context, Params>;
   private noMatchHandler?: Middleware<Context, Params>;
 
-  use(...middleware: Middleware<Context, Params>[]): this {
-    this.globalMiddlewares.push(...middleware);
+  public expose = () => expose(this);
+
+  use<C extends Context = Context>(
+    ...middleware: Middleware<C, Params>[]
+  ): this {
+    this.globalMiddlewares.push(
+      ...(middleware as Middleware<Context, Params>[])
+    );
     return this;
   }
 
-  get(...middlewares: Middleware<Context, Params>[]) {
-    return this.registerWithMiddleware("GET", middlewares);
+  get<C extends Context = Context>(...middlewares: Middleware<C, Params>[]) {
+    return this.registerWithMiddleware(
+      "GET",
+      middlewares as Middleware<Context, Params>[]
+    );
   }
 
-  post(...middlewares: Middleware<Context, Params>[]) {
-    return this.registerWithMiddleware("POST", middlewares);
+  post<C extends Context = Context>(...middlewares: Middleware<C, Params>[]) {
+    return this.registerWithMiddleware(
+      "POST",
+      middlewares as Middleware<Context, Params>[]
+    );
   }
 
-  put(...middlewares: Middleware<Context, Params>[]) {
-    return this.registerWithMiddleware("PUT", middlewares);
+  put<C extends Context = Context>(...middlewares: Middleware<C, Params>[]) {
+    return this.registerWithMiddleware(
+      "PUT",
+      middlewares as Middleware<Context, Params>[]
+    );
   }
 
-  delete(...middlewares: Middleware<Context, Params>[]) {
-    return this.registerWithMiddleware("DELETE", middlewares);
+  delete<C extends Context = Context>(...middlewares: Middleware<C, Params>[]) {
+    return this.registerWithMiddleware(
+      "DELETE",
+      middlewares as Middleware<Context, Params>[]
+    );
   }
 
-  patch(...middlewares: Middleware<Context, Params>[]) {
-    return this.registerWithMiddleware("PATCH", middlewares);
+  patch<C extends Context = Context>(...middlewares: Middleware<C, Params>[]) {
+    return this.registerWithMiddleware(
+      "PATCH",
+      middlewares as Middleware<Context, Params>[]
+    );
   }
 
-  options(...middlewares: Middleware<Context, Params>[]) {
-    return this.registerWithMiddleware("OPTIONS", middlewares);
+  options<C extends Context = Context>(
+    ...middlewares: Middleware<C, Params>[]
+  ) {
+    return this.registerWithMiddleware(
+      "OPTIONS",
+      middlewares as Middleware<Context, Params>[]
+    );
   }
 
-  head(...middlewares: Middleware<Context, Params>[]) {
-    return this.registerWithMiddleware("HEAD", middlewares);
+  head<C extends Context = Context>(...middlewares: Middleware<C, Params>[]) {
+    return this.registerWithMiddleware(
+      "HEAD",
+      middlewares as Middleware<Context, Params>[]
+    );
   }
 
   onError(handler: ErrorHandler<Context, Params>): this {
