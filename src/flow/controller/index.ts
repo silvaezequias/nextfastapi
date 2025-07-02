@@ -1,14 +1,17 @@
 import { MethodNotAllowedError } from "../../errors";
 import { HttpMethod } from "../../http";
-import { defaultErrorHandler } from "../errorHandler";
-import { runMiddlewares } from "../runner";
+import {
+  defaultErrorHandler,
+  defaultNoMatchHandler,
+} from "../middlewares/utils/errorHandler";
+import { runErrorMiddlewares, runMiddlewares } from "../runner";
 import { expose } from "./expose";
 
 import {
   ControllerRequest,
   DefaultContext,
   DefaultParams,
-  ErrorHandler,
+  ErrorMiddleware,
   Middleware,
 } from "../../types/Controller";
 
@@ -16,18 +19,17 @@ export class RouteController<
   Context extends DefaultContext = DefaultContext,
   Params extends DefaultParams = DefaultParams
 > {
+  private readonly errorMiddlewares: ErrorMiddleware<Context, Params>[] = [];
+  private readonly noMatchMiddlewares: Middleware<Context, Params>[] = [];
   private readonly globalMiddlewares: Middleware<Context, Params>[] = [];
   private readonly handlers: Partial<
     Record<HttpMethod, { middlewares: Middleware<Context, Params>[] }>
   > = {};
 
-  private errorHandler?: ErrorHandler<Context, Params>;
-  private noMatchHandler?: Middleware<Context, Params>;
-
   public expose = () => expose(this);
 
-  use<C extends Context = Context>(
-    ...middleware: Middleware<C, Params>[]
+  use<C extends Context = Context, P extends Params = Params>(
+    ...middleware: Middleware<C, P>[]
   ): this {
     this.globalMiddlewares.push(
       ...(middleware as Middleware<Context, Params>[])
@@ -35,43 +37,53 @@ export class RouteController<
     return this;
   }
 
-  get<C extends Context = Context>(...middlewares: Middleware<C, Params>[]) {
+  get<C extends Context = Context, P extends Params = Params>(
+    ...middlewares: Middleware<C, P>[]
+  ) {
     return this.registerWithMiddleware(
       "GET",
       middlewares as Middleware<Context, Params>[]
     );
   }
 
-  post<C extends Context = Context>(...middlewares: Middleware<C, Params>[]) {
+  post<C extends Context = Context, P extends Params = Params>(
+    ...middlewares: Middleware<C, P>[]
+  ) {
     return this.registerWithMiddleware(
       "POST",
       middlewares as Middleware<Context, Params>[]
     );
   }
 
-  put<C extends Context = Context>(...middlewares: Middleware<C, Params>[]) {
+  put<C extends Context = Context, P extends Params = Params>(
+    ...middlewares: Middleware<C, P>[]
+  ) {
     return this.registerWithMiddleware(
       "PUT",
       middlewares as Middleware<Context, Params>[]
     );
   }
 
-  delete<C extends Context = Context>(...middlewares: Middleware<C, Params>[]) {
+  delete<C extends Context = Context, P extends Params = Params>(
+    ...middlewares: Middleware<C, P>[]
+  ) {
     return this.registerWithMiddleware(
       "DELETE",
       middlewares as Middleware<Context, Params>[]
     );
   }
 
-  patch<C extends Context = Context>(...middlewares: Middleware<C, Params>[]) {
+  patch<C extends Context = Context, P extends Params = Params>(
+    ...middlewares: Middleware<C, P>[]
+  ) {
     return this.registerWithMiddleware(
       "PATCH",
       middlewares as Middleware<Context, Params>[]
     );
   }
 
-  options<C extends Context = Context>(
-    ...middlewares: Middleware<C, Params>[]
+  options<C extends Context = Context, P extends Params = Params>(
+    ...middlewares: Middleware<C, P>[]
   ) {
     return this.registerWithMiddleware(
       "OPTIONS",
@@ -79,20 +91,30 @@ export class RouteController<
     );
   }
 
-  head<C extends Context = Context>(...middlewares: Middleware<C, Params>[]) {
+  head<C extends Context = Context, P extends Params = Params>(
+    ...middlewares: Middleware<C, P>[]
+  ) {
     return this.registerWithMiddleware(
       "HEAD",
       middlewares as Middleware<Context, Params>[]
     );
   }
 
-  onError(handler: ErrorHandler<Context, Params>): this {
-    this.errorHandler = handler;
+  onError<C extends Context = Context, P extends Params = Params>(
+    ...middlewares: ErrorMiddleware<C, P>[]
+  ) {
+    this.registerErrorMiddleware(
+      middlewares as ErrorMiddleware<Context, Params>[]
+    );
     return this;
   }
 
-  onNoMatch(handler: Middleware<Context, Params>): this {
-    this.noMatchHandler = handler;
+  onNoMatch<C extends Context = Context, P extends Params = Params>(
+    ...middlewares: Middleware<C, P>[]
+  ) {
+    this.registerNoMatchMiddleware(
+      middlewares as Middleware<Context, Params>[]
+    );
     return this;
   }
 
@@ -106,19 +128,27 @@ export class RouteController<
       const method = req.method.toUpperCase() as HttpMethod;
       const entry = this.handlers[method];
 
+      this.registerNoMatchMiddleware([defaultNoMatchHandler]);
+
       const allMiddlewares: Middleware<Context, Params>[] = [
         ...this.globalMiddlewares,
         ...(entry?.middlewares ?? []),
-        this.noMatchHandler ??
-          (() => {
-            throw new MethodNotAllowedError();
-          }),
+        ...this.noMatchMiddlewares,
       ];
 
       return await runMiddlewares<Context, Params>(req, params, allMiddlewares);
     } catch (err) {
-      const handler = this.errorHandler ?? defaultErrorHandler;
-      return await handler(err, req, params);
+      const allMiddlewares: ErrorMiddleware<Context, Params>[] = [
+        ...this.errorMiddlewares,
+        defaultErrorHandler,
+      ];
+
+      return await runErrorMiddlewares<Context, Params>(
+        err,
+        req,
+        params,
+        allMiddlewares
+      );
     }
   }
 
@@ -127,6 +157,20 @@ export class RouteController<
     middlewares: Middleware<Context, Params>[]
   ): this {
     this.handlers[method] = { middlewares };
+    return this;
+  }
+
+  private registerErrorMiddleware(
+    middlewares: ErrorMiddleware<Context, Params>[]
+  ) {
+    this.errorMiddlewares.push(...middlewares);
+    return this;
+  }
+
+  private registerNoMatchMiddleware(
+    middlewares: Middleware<Context, Params>[]
+  ) {
+    this.noMatchMiddlewares.push(...middlewares);
     return this;
   }
 }

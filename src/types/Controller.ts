@@ -1,4 +1,4 @@
-import { Requester } from "../flow/injectRequesterInfo";
+import { Requester } from "../flow/middlewares/injectRequesterInfo";
 import { NextRequest } from "next/server";
 
 export type DefaultContext = Record<string, unknown>;
@@ -16,13 +16,14 @@ export interface ControllerRequest<
 export type ControllerResponse = Response;
 export type NextFn = () => Promise<ControllerResponse>;
 
-export type ErrorHandler<
+export type ErrorMiddleware<
   Context extends DefaultContext = DefaultContext,
   Params extends DefaultParams = DefaultParams
 > = (
   error: unknown,
   req: ControllerRequest<Context, Params>,
-  params: Params
+  params: Params,
+  next: NextFn
 ) => ControllerResponse | Promise<ControllerResponse>;
 
 export type Middleware<
