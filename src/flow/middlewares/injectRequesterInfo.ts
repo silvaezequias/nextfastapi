@@ -1,4 +1,4 @@
-import { Middleware } from "../types/Controller";
+import { Middleware } from "../../types/Controller";
 
 export interface Requester {
   ip: string;
